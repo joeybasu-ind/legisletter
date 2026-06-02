@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed.' })
   }
 
-  const { address, issues, tone } = req.body
+  const { address, issues, tone, bill, billPosition } = req.body
 
   if (!tone) {
     return res.status(400).json({ error: 'Tone is required.' })
@@ -29,16 +29,20 @@ export default async function handler(req, res) {
     ? issues.join(', ')
     : 'matters of civic importance'
 
+  const billContext = bill
+    ? `\nSpecific legislation to focus on: ${bill.billNumber} — "${bill.title}". The constituent wants to ${billPosition === 'oppose' ? 'OPPOSE' : 'SUPPORT'} this bill. Summary: ${bill.summary}`
+    : ''
+
   const prompt = `You are helping a constituent write a letter to their elected representative.
 
 Address/location: ${address || 'not specified'}
-Issues they care about: ${issueText}
+Issues they care about: ${issueText}${billContext}
 Tone: ${toneInstructions[tone] || toneInstructions.formal}
 
 Write a single constituent letter. Requirements:
 - Start with "Dear [Representative's Name],"
 - 3-4 paragraphs, roughly 200-250 words total
-- Reference the specific issues provided
+${bill ? `- Reference ${bill.billNumber} by name and clearly state the constituent's position (${billPosition === 'oppose' ? 'opposition' : 'support'})` : '- Reference the specific issues provided'}
 - End with a respectful closing and "[Your Name]" as a placeholder
 - Do NOT include any preamble, explanation, or notes — just the letter itself
 - Make it feel genuinely written by a real person, not a form letter`

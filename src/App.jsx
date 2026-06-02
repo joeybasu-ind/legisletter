@@ -171,7 +171,7 @@ const S = {
 
 // ─── Small components ─────────────────────────────────────────────────────────
 
-function ProgressBar({ step, total = 5 }) {
+function ProgressBar({ step, total = 6 }) {
   return (
     <div style={S.progress}>
       {Array.from({ length: total }).map((_, i) => (
@@ -264,6 +264,9 @@ export default function App() {
   const [step, setStep] = useState(0)
   const [address, setAddress] = useState('')
   const [selectedIssues, setSelectedIssues] = useState([])
+  const [legislation, setLegislation] = useState([])
+  const [selectedBill, setSelectedBill] = useState(null)
+  const [billPosition, setBillPosition] = useState('support')
   const [legislators, setLegislators] = useState([])
   const [selectedLegs, setSelectedLegs] = useState([])
   const [selectedTone, setSelectedTone] = useState('')
@@ -292,6 +295,28 @@ export default function App() {
     }
   }
 
+  async function handleIssuesNext() {
+    setLoading(true)
+    setError('')
+    try {
+      const issueLabels = selectedIssues.map(id => ISSUES.find(i => i.id === id)?.label).filter(Boolean)
+      const res = await fetch('/api/legislation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issues: issueLabels }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Could not fetch legislation.')
+      setLegislation(data.bills)
+      setSelectedBill(data.bills[0] || null)
+      setStep(1.5)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleDraft() {
     if (!selectedTone || selectedLegs.length === 0) return
     setLoading(true)
@@ -305,7 +330,7 @@ export default function App() {
       const res = await fetch('/api/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, issues: issueLabels, tone: selectedTone }),
+        body: JSON.stringify({ address, issues: issueLabels, tone: selectedTone, bill: selectedBill, billPosition }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Could not draft letter.')
@@ -339,7 +364,8 @@ export default function App() {
   }
 
   function restart() {
-    setStep(0); setAddress(''); setSelectedIssues([]); setLegislators([])
+    setStep(0); setAddress(''); setSelectedIssues([]); setLegislation([])
+    setSelectedBill(null); setBillPosition('support'); setLegislators([])
     setSelectedLegs([]); setSelectedTone(''); setLetterText(''); setUserEmail(''); setError('')
   }
 
@@ -368,7 +394,7 @@ export default function App() {
       {/* ── Step 0: Address ── */}
       {step === 0 && (
         <div>
-          <div style={S.stepLabel}>Step 1 of 5</div>
+          <div style={S.stepLabel}>Step 1 of 6</div>
           <h2 style={S.h2}>Where do you call home?</h2>
           <ErrorBox message={error} />
           <input
@@ -391,7 +417,7 @@ export default function App() {
       {/* ── Step 1: Issues ── */}
       {step === 1 && (
         <div>
-          <div style={S.stepLabel}>Step 2 of 5</div>
+          <div style={S.stepLabel}>Step 2 of 6</div>
           <h2 style={S.h2}>What issues matter to you?</h2>
           <div style={S.issueGrid}>
             {ISSUES.map(issue => (
@@ -422,10 +448,83 @@ export default function App() {
               </button>
             ))}
           </div>
+          <ErrorBox message={error} />
           <hr style={S.divider} />
           <div style={S.btnRow}>
             <Btn onClick={() => setStep(0)}>← Back</Btn>
-            <Btn primary onClick={() => setStep(2)}>Select Representatives →</Btn>
+            <Btn primary onClick={handleIssuesNext} disabled={loading || selectedIssues.length === 0}>
+              {loading ? 'Finding legislation…' : 'Find Relevant Bills →'}
+            </Btn>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 1.5: Legislation ── */}
+      {step === 1.5 && (
+        <div>
+          <div style={S.stepLabel}>Step 3 of 6</div>
+          <h2 style={S.h2}>Choose a bill to focus your letter on</h2>
+          <p style={{ ...S.note, marginBottom: '1rem' }}>These bills are currently active in Congress and relate to your selected issues. Pick one — your letter will reference it by name.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: '1.25rem' }}>
+            {legislation.map((bill, i) => (
+              <div
+                key={i}
+                onClick={() => setSelectedBill(bill)}
+                style={{
+                  padding: '0.9rem 1rem',
+                  border: selectedBill === bill ? '1px solid #8B1A1A' : '1px solid rgba(74,63,53,0.2)',
+                  background: selectedBill === bill ? 'rgba(139,26,26,0.06)' : 'rgba(255,255,255,0.5)',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  <span style={{ fontFamily: "'Cinzel', serif", fontSize: '0.72rem', color: '#C4922A', letterSpacing: '0.05em', fontWeight: 600 }}>
+                    {bill.billNumber}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', color: '#8A7A6A', fontStyle: 'italic' }}>{bill.status}</span>
+                  <span style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: 2, background: 'rgba(74,63,53,0.08)', color: '#4A3F35', marginLeft: 'auto' }}>
+                    {bill.issue}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 500, color: '#1A1410', marginBottom: 4 }}>{bill.title}</div>
+                <div style={{ fontSize: '0.78rem', color: '#4A3F35', lineHeight: 1.5 }}>{bill.summary}</div>
+              </div>
+            ))}
+          </div>
+          {selectedBill && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <div style={S.stepLabel}>Your position on {selectedBill.billNumber}</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => setBillPosition('support')}
+                  style={{
+                    flex: 1, padding: '0.6rem', border: billPosition === 'support' ? '1px solid #2A6E2A' : '1px solid rgba(74,63,53,0.3)',
+                    background: billPosition === 'support' ? 'rgba(42,110,42,0.08)' : 'transparent',
+                    borderRadius: 4, cursor: 'pointer', fontFamily: "'Lora', serif", fontSize: '0.85rem',
+                    color: billPosition === 'support' ? '#2A6E2A' : '#4A3F35', fontWeight: billPosition === 'support' ? 500 : 400,
+                  }}
+                >
+                  ✓ Support this bill
+                </button>
+                <button
+                  onClick={() => setBillPosition('oppose')}
+                  style={{
+                    flex: 1, padding: '0.6rem', border: billPosition === 'oppose' ? '1px solid #8B1A1A' : '1px solid rgba(74,63,53,0.3)',
+                    background: billPosition === 'oppose' ? 'rgba(139,26,26,0.08)' : 'transparent',
+                    borderRadius: 4, cursor: 'pointer', fontFamily: "'Lora', serif", fontSize: '0.85rem',
+                    color: billPosition === 'oppose' ? '#8B1A1A' : '#4A3F35', fontWeight: billPosition === 'oppose' ? 500 : 400,
+                  }}
+                >
+                  ✗ Oppose this bill
+                </button>
+              </div>
+            </div>
+          )}
+          <hr style={S.divider} />
+          <div style={S.btnRow}>
+            <Btn onClick={() => setStep(1)}>← Back</Btn>
+            <Btn primary onClick={() => setStep(2)} disabled={!selectedBill}>Select Representatives →</Btn>
           </div>
         </div>
       )}
@@ -433,7 +532,7 @@ export default function App() {
       {/* ── Step 2: Legislators ── */}
       {step === 2 && (
         <div>
-          <div style={S.stepLabel}>Step 3 of 5</div>
+          <div style={S.stepLabel}>Step 4 of 6</div>
           <h2 style={S.h2}>Choose who to contact</h2>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{ fontSize: '0.8rem', color: '#8A7A6A', fontStyle: 'italic' }}>
@@ -490,7 +589,7 @@ export default function App() {
           </div>
           <hr style={S.divider} />
           <div style={S.btnRow}>
-            <Btn onClick={() => setStep(1)}>← Back</Btn>
+            <Btn onClick={() => setStep(1.5)}>← Back</Btn>
             <Btn primary onClick={() => setStep(2.5)} disabled={selectedLegs.length === 0}>Choose Tone →</Btn>
           </div>
         </div>
@@ -499,7 +598,7 @@ export default function App() {
       {/* ── Step 2.5: Tone ── */}
       {step === 2.5 && (
         <div>
-          <div style={S.stepLabel}>Step 4 of 5</div>
+          <div style={S.stepLabel}>Step 5 of 6</div>
           <h2 style={S.h2}>How would you like your letter to read?</h2>
           <div style={S.toneGrid}>
             {TONES.map(t => (
@@ -538,7 +637,7 @@ export default function App() {
       {/* ── Step 3: Review & Send ── */}
       {step === 3 && (
         <div>
-          <div style={S.stepLabel}>Step 5 of 5</div>
+          <div style={S.stepLabel}>Step 6 of 6</div>
           <h2 style={S.h2}>Review and send your letter</h2>
           <ErrorBox message={error} />
           {loading ? (
