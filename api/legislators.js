@@ -84,7 +84,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'No representatives found for that ZIP code.' })
     }
 
-    return res.status(200).json({ officials })
+    return res.status(200).json({ officials, _debug: { zip, state, district } })
   } catch (err) {
     console.error('Legislators API error:', err)
     return res.status(500).json({ error: 'Something went wrong. Please try again.' })
