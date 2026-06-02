@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -261,6 +261,40 @@ function ErrorBox({ message }) {
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const addressInputRef = useRef(null)
+  const autocompleteRef = useRef(null)
+
+  useEffect(() => {
+    const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
+    if (!mapsKey || window.google) return
+
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsKey}&libraries=places`
+    script.async = true
+    script.onload = () => initAutocomplete()
+    document.head.appendChild(script)
+  }, [])
+
+  useEffect(() => {
+    if (step === 0 && window.google && addressInputRef.current && !autocompleteRef.current) {
+      initAutocomplete()
+    }
+  }, [step])
+
+  function initAutocomplete() {
+    if (!window.google || !addressInputRef.current) return
+    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+      componentRestrictions: { country: 'us' },
+      fields: ['formatted_address'],
+      types: ['address'],
+    })
+    ac.addListener('place_changed', () => {
+      const place = ac.getPlace()
+      if (place.formatted_address) setAddress(place.formatted_address)
+    })
+    autocompleteRef.current = ac
+  }
+
   const [step, setStep] = useState(0)
   const [address, setAddress] = useState('')
   const [selectedIssues, setSelectedIssues] = useState([])
@@ -398,6 +432,7 @@ export default function App() {
           <h2 style={S.h2}>Where do you call home?</h2>
           <ErrorBox message={error} />
           <input
+            ref={addressInputRef}
             style={S.input}
             placeholder="Enter your address or ZIP code..."
             value={address}
