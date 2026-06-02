@@ -282,7 +282,7 @@ export default function App() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/legislators?address=${encodeURIComponent(address)}`)
+      const res = await fetch(`/api/legislators?address=${encodeURIComponent(address)}&t=${Date.now()}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Could not look up your representatives.')
       setLegislators(data.officials)

@@ -111,6 +111,7 @@ Example format:
       return res.status(404).json({ error: 'No representatives found for that ZIP code.' })
     }
 
+    res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({ officials })
   } catch (err) {
     console.error('Legislators API error:', err)
