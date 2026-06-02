@@ -280,22 +280,24 @@ export default function App() {
 
   useEffect(() => {
     const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
-    if (!mapsKey || window.google) return
+    if (!mapsKey) return
+
+    if (window.google) {
+      initAutocomplete()
+      return
+    }
+
+    if (document.querySelector('#google-maps-script')) return
     const script = document.createElement('script')
+    script.id = 'google-maps-script'
     script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsKey}&libraries=places`
     script.async = true
     script.onload = () => initAutocomplete()
     document.head.appendChild(script)
   }, [])
 
-  useEffect(() => {
-    if (step === 0 && window.google && addressInputRef.current && !autocompleteRef.current) {
-      initAutocomplete()
-    }
-  }, [step])
-
   function initAutocomplete() {
-    if (!window.google || !addressInputRef.current) return
+    if (!window.google || !addressInputRef.current || autocompleteRef.current) return
     const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
       componentRestrictions: { country: 'us' },
       fields: ['formatted_address'],
@@ -436,7 +438,14 @@ export default function App() {
             placeholder="Enter your address or ZIP code..."
             value={address}
             onChange={e => setAddress(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAddressNext()}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                // Prevent submission if autocomplete dropdown is open
+                const pac = document.querySelector('.pac-container')
+                if (pac && pac.style.display !== 'none' && pac.children.length > 0) return
+                handleAddressNext()
+              }
+            }}
           />
           <p style={S.note}>Your address determines which legislators represent you at the local, state, and federal levels.</p>
           <hr style={S.divider} />
