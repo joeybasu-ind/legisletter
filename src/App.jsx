@@ -261,13 +261,26 @@ function ErrorBox({ message }) {
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const [step, setStep] = useState(0)
+  const [address, setAddress] = useState('')
+  const [selectedIssues, setSelectedIssues] = useState([])
+  const [legislation, setLegislation] = useState([])
+  const [selectedBill, setSelectedBill] = useState(null)
+  const [billPosition, setBillPosition] = useState('support')
+  const [legislators, setLegislators] = useState([])
+  const [selectedLegs, setSelectedLegs] = useState([])
+  const [selectedTone, setSelectedTone] = useState('')
+  const [letterText, setLetterText] = useState('')
+  const [userEmail, setUserEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
   const addressInputRef = useRef(null)
   const autocompleteRef = useRef(null)
 
   useEffect(() => {
     const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
     if (!mapsKey || window.google) return
-
     const script = document.createElement('script')
     script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsKey}&libraries=places`
     script.async = true
@@ -294,20 +307,6 @@ export default function App() {
     })
     autocompleteRef.current = ac
   }
-
-  const [step, setStep] = useState(0)
-  const [address, setAddress] = useState('')
-  const [selectedIssues, setSelectedIssues] = useState([])
-  const [legislation, setLegislation] = useState([])
-  const [selectedBill, setSelectedBill] = useState(null)
-  const [billPosition, setBillPosition] = useState('support')
-  const [legislators, setLegislators] = useState([])
-  const [selectedLegs, setSelectedLegs] = useState([])
-  const [selectedTone, setSelectedTone] = useState('')
-  const [letterText, setLetterText] = useState('')
-  const [userEmail, setUserEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   // ── Step navigation ──────────────────────────────────────────────────────
 
