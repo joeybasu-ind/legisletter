@@ -1,0 +1,28 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --parchment: #F5F0E8;
+  --parchment-dark: #EAE3D2;
+  --parchment-mid: #DDD6C4;
+  --ink: #1A1410;
+  --ink-mid: #4A3F35;
+  --ink-light: #8A7A6A;
+  --seal: #8B1A1A;
+  --seal-light: #C5392A;
+  --gold: #C4922A;
+  --gold-light: #E8B84B;
+  --border: rgba(74, 63, 53, 0.2);
+  --border-strong: rgba(74, 63, 53, 0.45);
+  --success: #2D6A4F;
+}
+
+html, body {
+  background: var(--parchment);
+  color: var(--ink);
+  font-family: 'Lora', Georgia, serif;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
