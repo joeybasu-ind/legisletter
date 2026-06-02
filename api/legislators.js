@@ -1,6 +1,6 @@
 // api/legislators.js
-// Uses Claude to look up current U.S. federal representatives for a ZIP code.
-// whoismyrepresentative.com was too stale; Claude has up-to-date knowledge.
+// Step 1: zippopotam.us gives us city + state from ZIP (free, no key)
+// Step 2: Claude looks up current reps with that concrete location context
 
 export default async function handler(req, res) {
   const { address } = req.query
@@ -20,6 +20,25 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Anthropic API key not configured.' })
   }
 
+  // Step 1: resolve ZIP to city + state
+  let city = ''
+  let state = ''
+  try {
+    const geoRes = await fetch(`https://api.zippopotam.us/us/${zip}`)
+    if (geoRes.ok) {
+      const geoData = await geoRes.json()
+      city = geoData.places?.[0]?.['place name'] || ''
+      state = geoData.places?.[0]?.['state abbreviation'] || ''
+    }
+  } catch {
+    // non-fatal — Claude will do its best with just the ZIP
+  }
+
+  const locationDesc = city && state
+    ? `ZIP code ${zip} (${city}, ${state})`
+    : `ZIP code ${zip}`
+
+  // Step 2: ask Claude for current reps with full location context
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -33,25 +52,23 @@ export default async function handler(req, res) {
         max_tokens: 1024,
         messages: [{
           role: 'user',
-          content: `You are a civic information assistant. Look up the current U.S. federal elected officials for ZIP code ${zip}.
+          content: `You are a civic information assistant with up-to-date knowledge of U.S. Congress members.
 
-Return ONLY a valid JSON array with no explanation, no markdown, no code fences.
+The user lives at ${locationDesc}. Identify their current federal elected officials as of your latest knowledge:
+- The 2 current U.S. Senators for ${state || 'that state'}
+- The current U.S. House Representative for that specific city/ZIP congressional district
 
-Include:
-- The 2 current U.S. Senators for that state
-- The current U.S. House Representative for that ZIP code's congressional district
+Return ONLY a valid JSON array. No explanation, no markdown, no code fences.
 
 Each item must have these exact fields:
-- "name": full name, e.g. "Todd Young"
+- "name": full name, e.g. "Victoria Spartz"
 - "title": e.g. "U.S. Senator (IN)" or "U.S. Representative, IN-05"
 - "party": "D", "R", or "I"
 - "phone": DC office phone number if known, otherwise null
 - "website": official .gov website if known, otherwise null
 
-Use your most current knowledge. If you are uncertain about a specific district, make your best determination based on the ZIP code.
-
 Example format:
-[{"name":"Todd Young","title":"U.S. Senator (IN)","party":"R","phone":"202-224-5623","website":"https://www.young.senate.gov"}]`,
+[{"name":"Victoria Spartz","title":"U.S. Representative, IN-05","party":"R","phone":"202-225-2276","website":"https://spartz.house.gov"}]`,
         }],
       }),
     })
