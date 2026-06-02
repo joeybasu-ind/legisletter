@@ -34,12 +34,15 @@ export default async function handler(req, res) {
   let district = null
   if (lat && lng) {
     try {
-      const censusUrl = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lng}&y=${lat}&benchmark=Public_AR_Census2020&vintage=Census2020_Census2020&layers=54&format=json`
+      const censusUrl = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lng}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Current&layers=54&format=json`
       const r = await fetch(censusUrl)
       if (r.ok) {
         const d = await r.json()
-        const cdList = d.result?.geographies?.['Congressional Districts'] || []
-        if (cdList.length > 0) district = cdList[0].DISTRICT // e.g. "05"
+        const geographies = d.result?.geographies || {}
+        // Key name includes the congress session, e.g. "119th Congressional Districts"
+        const cdKey = Object.keys(geographies).find(k => k.includes('Congressional Districts'))
+        const cdList = cdKey ? geographies[cdKey] : []
+        if (cdList.length > 0) district = cdList[0].BASENAME // e.g. "5"
       }
     } catch {}
   }
@@ -55,7 +58,7 @@ export default async function handler(req, res) {
     const senators    = d.members.filter(m => !m.district)
     const houseAll    = d.members.filter(m => m.district)
     const houseRep    = district
-      ? houseAll.find(m => parseInt(m.district, 10) === parseInt(district, 10))
+      ? houseAll.find(m => Number(m.district) === parseInt(district, 10))
       : null
 
     const toOfficial = (m, title) => {
