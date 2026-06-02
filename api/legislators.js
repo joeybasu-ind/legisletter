@@ -9,9 +9,11 @@ export default async function handler(req, res) {
   const { address } = req.query
   if (!address) return res.status(400).json({ error: 'Address is required.' })
 
-  const zipMatches = address.match(/\b\d{5}\b/g)
-  if (!zipMatches) return res.status(400).json({ error: 'Please include a 5-digit ZIP code in your address.' })
-  const zip = zipMatches[zipMatches.length - 1] // use last match — house numbers come before ZIP
+  // Prefer ZIP after a state abbreviation (e.g. "IN 46033"), else take the last 5-digit number
+  const stateZipMatch = address.match(/\b[A-Z]{2}\s+(\d{5})\b/)
+  const fallbackMatches = address.match(/\b\d{5}\b/g)
+  const zip = stateZipMatch ? stateZipMatch[1] : fallbackMatches ? fallbackMatches[fallbackMatches.length - 1] : null
+  if (!zip) return res.status(400).json({ error: 'Please include a 5-digit ZIP code in your address.' })
 
   const congressKey = process.env.CONGRESS_API_KEY
   if (!congressKey) return res.status(500).json({ error: 'Congress API key not configured.' })
