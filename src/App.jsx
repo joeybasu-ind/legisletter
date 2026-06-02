@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -275,41 +275,6 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const addressInputRef = useRef(null)
-  const autocompleteRef = useRef(null)
-
-  useEffect(() => {
-    const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
-    if (!mapsKey) return
-
-    if (window.google) {
-      initAutocomplete()
-      return
-    }
-
-    if (document.querySelector('#google-maps-script')) return
-    const script = document.createElement('script')
-    script.id = 'google-maps-script'
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsKey}&libraries=places`
-    script.async = true
-    script.onload = () => initAutocomplete()
-    document.head.appendChild(script)
-  }, [])
-
-  function initAutocomplete() {
-    if (!window.google || !addressInputRef.current || autocompleteRef.current) return
-    const ac = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-      componentRestrictions: { country: 'us' },
-      fields: ['formatted_address'],
-      types: ['address'],
-    })
-    ac.addListener('place_changed', () => {
-      const place = ac.getPlace()
-      if (place.formatted_address) setAddress(place.formatted_address)
-    })
-    autocompleteRef.current = ac
-  }
-
   // ── Step navigation ──────────────────────────────────────────────────────
 
   async function handleAddressNext() {
@@ -433,19 +398,12 @@ export default function App() {
           <h2 style={S.h2}>Where do you call home?</h2>
           <ErrorBox message={error} />
           <input
-            ref={addressInputRef}
             style={S.input}
-            placeholder="Enter your address or ZIP code..."
+            placeholder="e.g. 12416 Springbrooke Run, Carmel, IN 46033"
             value={address}
             onChange={e => setAddress(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                // Prevent submission if autocomplete dropdown is open
-                const pac = document.querySelector('.pac-container')
-                if (pac && pac.style.display !== 'none' && pac.children.length > 0) return
-                handleAddressNext()
-              }
-            }}
+            onKeyDown={e => e.key === 'Enter' && handleAddressNext()}
+            autoComplete="street-address"
           />
           <p style={S.note}>Your address determines which legislators represent you at the local, state, and federal levels.</p>
           <hr style={S.divider} />
