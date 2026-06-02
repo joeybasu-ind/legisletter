@@ -44,9 +44,10 @@ Each item must have these exact fields:
 - "summary": 1-2 sentence plain-English summary of what it does
 - "status": one of "In Committee", "Passed House", "Passed Senate", "Awaiting Vote", "Signed into Law"
 - "issue": which of the user's issues this relates to most
+- "sponsor": the full name of the primary sponsor, e.g. "Rep. Jane Smith (D-CA)" or "Sen. John Doe (R-TX)"
 
 Example format:
-[{"billNumber":"H.R. 1234","title":"Example Act","summary":"This bill does X.","status":"In Committee","issue":"Healthcare"}]`,
+[{"billNumber":"H.R. 1234","title":"Example Act","summary":"This bill does X.","status":"In Committee","issue":"Healthcare","sponsor":"Rep. Jane Smith (D-CA)"}]`,
         }],
       }),
     })

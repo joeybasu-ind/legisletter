@@ -489,6 +489,11 @@ export default function App() {
                 </div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 500, color: '#1A1410', marginBottom: 4 }}>{bill.title}</div>
                 <div style={{ fontSize: '0.78rem', color: '#4A3F35', lineHeight: 1.5 }}>{bill.summary}</div>
+                {bill.sponsor && (
+                  <div style={{ fontSize: '0.72rem', color: '#8A7A6A', marginTop: 6, fontStyle: 'italic' }}>
+                    Sponsored by {bill.sponsor}
+                  </div>
+                )}
               </div>
             ))}
           </div>
