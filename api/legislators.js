@@ -1,117 +1,84 @@
 // api/legislators.js
-// Step 1: zippopotam.us gives us city + state from ZIP (free, no key)
-// Step 2: Claude looks up current reps with that concrete location context
+// 1. zippopotam.us  → lat/lng + state (free, no key)
+// 2. Census geocoder → congressional district number (free, no key)
+// 3. congress.gov   → current senators + house rep (free API key)
 
 export default async function handler(req, res) {
-  const { address } = req.query
+  res.setHeader('Cache-Control', 'no-store')
 
-  if (!address) {
-    return res.status(400).json({ error: 'Address is required.' })
-  }
+  const { address } = req.query
+  if (!address) return res.status(400).json({ error: 'Address is required.' })
 
   const zipMatch = address.match(/\b\d{5}\b/)
-  if (!zipMatch) {
-    return res.status(400).json({ error: 'Please include a 5-digit ZIP code in your address.' })
-  }
+  if (!zipMatch) return res.status(400).json({ error: 'Please include a 5-digit ZIP code in your address.' })
   const zip = zipMatch[0]
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Anthropic API key not configured.' })
-  }
+  const congressKey = process.env.CONGRESS_API_KEY
+  if (!congressKey) return res.status(500).json({ error: 'Congress API key not configured.' })
 
-  // Step 1: resolve ZIP to city + state
-  let city = ''
-  let state = ''
+  // ── Step 1: ZIP → lat/lng + state ────────────────────────────────────────
+  let state = '', lat = '', lng = ''
   try {
-    const geoRes = await fetch(`https://api.zippopotam.us/us/${zip}`)
-    if (geoRes.ok) {
-      const geoData = await geoRes.json()
-      city = geoData.places?.[0]?.['place name'] || ''
-      state = geoData.places?.[0]?.['state abbreviation'] || ''
+    const r = await fetch(`https://api.zippopotam.us/us/${zip}`)
+    if (r.ok) {
+      const d = await r.json()
+      state = d.places?.[0]?.['state abbreviation'] || ''
+      lat   = d.places?.[0]?.latitude  || ''
+      lng   = d.places?.[0]?.longitude || ''
     }
-  } catch {
-    // non-fatal — Claude will do its best with just the ZIP
-  }
+  } catch {}
 
-  const locationDesc = city && state
-    ? `ZIP code ${zip} (${city}, ${state})`
-    : `ZIP code ${zip}`
+  if (!state) return res.status(400).json({ error: 'Could not determine state from that ZIP code.' })
 
-  // Step 2: ask Claude for current reps with full location context
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 1024,
-        messages: [{
-          role: 'user',
-          content: `You are a civic information assistant with up-to-date knowledge of U.S. Congress members.
-
-The user lives at ${locationDesc}. Identify their current federal elected officials as of your latest knowledge:
-- The 2 current U.S. Senators for ${state || 'that state'}
-- The current U.S. House Representative for that specific city/ZIP congressional district
-
-Return ONLY a valid JSON array. No explanation, no markdown, no code fences.
-
-Each item must have these exact fields:
-- "name": full name, e.g. "Victoria Spartz"
-- "title": e.g. "U.S. Senator (IN)" or "U.S. Representative, IN-05"
-- "party": "D", "R", or "I"
-- "phone": DC office phone number if known, otherwise null
-- "website": official .gov website if known, otherwise null
-
-Example format:
-[{"name":"Victoria Spartz","title":"U.S. Representative, IN-05","party":"R","phone":"202-225-2276","website":"https://spartz.house.gov"}]`,
-        }],
-      }),
-    })
-
-    const data = await response.json()
-    if (!response.ok || data.error) {
-      throw new Error(data.error?.message || 'Claude API error')
-    }
-
-    const raw = data.content[0].text.trim()
-    let members
+  // ── Step 2: lat/lng → congressional district ──────────────────────────────
+  let district = null
+  if (lat && lng) {
     try {
-      members = JSON.parse(raw)
-    } catch {
-      const match = raw.match(/\[[\s\S]*\]/)
-      if (!match) throw new Error('Could not parse representatives response.')
-      members = JSON.parse(match[0])
+      const censusUrl = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lng}&y=${lat}&benchmark=Public_AR_Census2020&vintage=Census2020_Census2020&layers=54&format=json`
+      const r = await fetch(censusUrl)
+      if (r.ok) {
+        const d = await r.json()
+        const cdList = d.result?.geographies?.['Congressional Districts'] || []
+        if (cdList.length > 0) district = cdList[0].DISTRICT // e.g. "05"
+      }
+    } catch {}
+  }
+
+  // ── Step 3: congress.gov → current members for this state ────────────────
+  try {
+    const r = await fetch(
+      `https://api.congress.gov/v3/member/${state}?currentMember=true&limit=60&api_key=${congressKey}`
+    )
+    const d = await r.json()
+    if (!r.ok || !d.members) throw new Error('congress.gov request failed')
+
+    const senators    = d.members.filter(m => !m.district)
+    const houseAll    = d.members.filter(m => m.district)
+    const houseRep    = district
+      ? houseAll.find(m => parseInt(m.district, 10) === parseInt(district, 10))
+      : null
+
+    const toOfficial = (m, title) => {
+      // congress.gov returns names as "Last, First" — flip them
+      const parts = (m.name || '').split(', ')
+      const fullName = parts.length === 2 ? `${parts[1]} ${parts[0]}` : m.name
+      const words = fullName.trim().split(' ')
+      const initials = words.length >= 2
+        ? (words[0][0] + words[words.length - 1][0]).toUpperCase()
+        : fullName.slice(0, 2).toUpperCase()
+      const party = m.partyName === 'Democratic' ? 'D' : m.partyName === 'Republican' ? 'R' : 'I'
+      return { name: fullName, title, party, initials, level: 'federal', email: null, phone: null, website: null }
     }
 
-    const officials = members.map((m, i) => {
-      const nameParts = m.name.trim().split(' ')
-      const initials = nameParts.length >= 2
-        ? nameParts[0][0] + nameParts[nameParts.length - 1][0]
-        : m.name.slice(0, 2)
-
-      return {
-        id: i + 1,
-        name: m.name,
-        title: m.title,
-        party: m.party || '?',
-        initials: initials.toUpperCase(),
-        level: 'federal',
-        email: null,
-        phone: m.phone || null,
-        website: m.website || null,
-      }
-    })
+    const officials = [
+      ...senators.map(m => toOfficial(m, `U.S. Senator (${state})`)),
+      ...(houseRep ? [toOfficial(houseRep, `U.S. Representative, ${state}-${district}`)] : []),
+    ].map((o, i) => ({ ...o, id: i + 1 }))
 
     if (officials.length === 0) {
       return res.status(404).json({ error: 'No representatives found for that ZIP code.' })
     }
 
-    res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({ officials })
   } catch (err) {
     console.error('Legislators API error:', err)
