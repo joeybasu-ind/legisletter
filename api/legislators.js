@@ -1,6 +1,7 @@
 // api/legislators.js
 // Vercel serverless function — runs on the server, never exposed to users.
-// Calls Google Civic Information API to look up real legislators by address.
+// Uses whoismyrepresentative.com (free, no key required) to look up federal
+// legislators by ZIP code extracted from the user's address.
 
 export default async function handler(req, res) {
   const { address } = req.query
@@ -9,69 +10,58 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Address is required.' })
   }
 
-  const apiKey = process.env.GOOGLE_CIVIC_API_KEY
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Google Civic API key not configured.' })
+  // Extract ZIP code from the address string
+  const zipMatch = address.match(/\b\d{5}\b/)
+  if (!zipMatch) {
+    return res.status(400).json({ error: 'Please include a 5-digit ZIP code in your address.' })
   }
+  const zip = zipMatch[0]
 
   try {
-    const url = `https://www.googleapis.com/civicinfo/v2/representatives?address=${encodeURIComponent(address)}&key=${apiKey}`
+    const url = `https://whoismyrepresentative.com/getall_mems.php?zip=${zip}&output=json`
     const response = await fetch(url)
+
+    if (!response.ok) {
+      return res.status(400).json({ error: 'Could not find representatives for that ZIP code. Please try again.' })
+    }
+
     const data = await response.json()
 
-    if (!response.ok || data.error) {
-      return res.status(400).json({ error: 'Could not find representatives for that address. Try a full street address or ZIP code.' })
+    if (!data.results || data.results.length === 0) {
+      return res.status(404).json({ error: 'No representatives found for that ZIP code.' })
     }
 
-    // Google returns offices + officials as separate arrays. We combine them.
-    const officials = []
-    let idCounter = 1
+    const partyMap = { 'D': 'D', 'R': 'R', 'I': 'I' }
 
-    for (const office of data.offices || []) {
-      // Determine level from the office's levels array
-      const levels = office.levels || []
-      let level = 'local'
-      if (levels.includes('country')) level = 'federal'
-      else if (levels.includes('administrativeArea1')) level = 'state'
+    const officials = data.results.map((rep, i) => {
+      const nameParts = rep.name.trim().split(' ')
+      const initials = nameParts.length >= 2
+        ? nameParts[0][0] + nameParts[nameParts.length - 1][0]
+        : rep.name.slice(0, 2)
 
-      for (const index of office.officialIndices || []) {
-        const official = data.officials[index]
-        if (!official) continue
+      const party = partyMap[rep.party] || rep.party || '?'
 
-        // Build initials from name
-        const nameParts = official.name.trim().split(' ')
-        const initials = nameParts.length >= 2
-          ? nameParts[0][0] + nameParts[nameParts.length - 1][0]
-          : official.name.slice(0, 2)
+      // Senators have no district number; reps do
+      const isSenator = !rep.district || rep.district === ''
+      const title = isSenator ? `U.S. Senator (${rep.state})` : `U.S. Representative, ${rep.state}-${rep.district}`
+      const level = 'federal'
 
-        // Get party abbreviation
-        const partyMap = { 'Democratic Party': 'D', 'Republican Party': 'R', 'Independent': 'I', 'Nonpartisan': 'NP' }
-        const party = partyMap[official.party] || official.party?.[0] || '?'
-
-        // Get email if available
-        const email = official.emails?.[0] || null
-
-        officials.push({
-          id: idCounter++,
-          name: official.name,
-          title: office.name,
-          party,
-          initials: initials.toUpperCase(),
-          level,
-          email,
-          phone: official.phones?.[0] || null,
-          website: official.urls?.[0] || null,
-        })
+      return {
+        id: i + 1,
+        name: rep.name,
+        title,
+        party,
+        initials: initials.toUpperCase(),
+        level,
+        email: null,
+        phone: rep.phone || null,
+        website: rep.link || null,
       }
-    }
-
-    if (officials.length === 0) {
-      return res.status(404).json({ error: 'No representatives found for that address.' })
-    }
+    })
 
     return res.status(200).json({ officials })
   } catch (err) {
-    console.error('Civic API error:', err)
+    console.error('Representatives API error:', err)
     return res.status(500).json({ error: 'Something went wrong. Please try again.' })
   }
 }
