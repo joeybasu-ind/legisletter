@@ -399,7 +399,7 @@ export default function App() {
           <ErrorBox message={error} />
           <input
             style={S.input}
-            placeholder="e.g. 12416 Springbrooke Run, Carmel, IN 46033"
+            placeholder="e.g. 123 Main St, Springfield, IL 62701"
             value={address}
             onChange={e => setAddress(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAddressNext()}
