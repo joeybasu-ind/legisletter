@@ -19,12 +19,29 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Email service not configured.' })
   }
 
-  // Build legislator contact links for the email
-  const legLines = legislators.map(l => {
-    const contact = l.website
-      ? `${l.name} (${l.title}) — <a href="${l.website}" style="color:#8B1A1A;">${l.website}</a>`
-      : `${l.name} (${l.title})`
-    return `<li style="margin-bottom:6px;">${contact}</li>`
+  // Build prominent contact cards for each legislator
+  // Members of Congress don't have public email addresses — they use web contact forms.
+  // We link directly to /contact on their official site as the most direct route.
+  const legCards = legislators.map(l => {
+    const baseUrl = l.website ? l.website.replace(/\/$/, '') : null
+    const contactUrl = baseUrl ? `${baseUrl}/contact` : null
+    const displayUrl = baseUrl ? baseUrl.replace('https://', '') : null
+
+    return `
+    <div style="border: 1px solid rgba(139,26,26,0.25); border-radius: 6px; padding: 16px 20px; margin-bottom: 12px; background: #fff;">
+      <div style="font-size:0.95rem; font-weight:600; color:#1A1410; margin-bottom:4px;">${l.name}</div>
+      <div style="font-size:0.78rem; color:#8A7A6A; margin-bottom:12px;">${l.title}</div>
+      ${contactUrl ? `
+      <a href="${contactUrl}" style="display:inline-block; background:#8B1A1A; color:#F5EDE0; text-decoration:none; font-size:0.8rem; padding:8px 16px; border-radius:3px; font-family:Arial,sans-serif; letter-spacing:0.05em;">
+        Submit Letter on ${displayUrl} →
+      </a>
+      <div style="font-size:0.7rem; color:#8A7A6A; margin-top:8px; font-style:italic;">
+        Note: Members of Congress use secure web forms rather than public email addresses.<br>
+        Paste your letter into the message field on their contact page.
+      </div>` : `
+      <div style="font-size:0.78rem; color:#8A7A6A; font-style:italic;">Contact page not available — search "${l.name} contact congress" to find their form.</div>
+      `}
+    </div>`
   }).join('')
 
   const emailHtml = `
@@ -39,16 +56,14 @@ export default async function handler(req, res) {
     <p style="font-size:0.85rem; color:#4A3F35; font-style:italic; margin-top:6px;">Your letter is ready to send.</p>
   </div>
 
-  <p style="font-size:0.9rem; line-height:1.7; color:#4A3F35;">
-    Here is a copy of your constituent letter. To submit it, visit each representative's contact page below and paste the letter into their form.
+  <p style="font-size:0.9rem; line-height:1.7; color:#4A3F35; margin-bottom:24px;">
+    Your constituent letter is below. Click the red button for each representative to open their contact page, then paste your letter into the message field and hit submit.
   </p>
 
-  <h2 style="font-size:0.85rem; font-family: Arial, sans-serif; text-transform:uppercase; letter-spacing:0.15em; color:#8A7A6A; margin-bottom:8px;">Your Representatives</h2>
-  <ul style="font-size:0.85rem; line-height:1.7; padding-left:20px; margin-bottom:28px;">
-    ${legLines}
-  </ul>
+  <h2 style="font-size:0.85rem; font-family: Arial, sans-serif; text-transform:uppercase; letter-spacing:0.15em; color:#8A7A6A; margin-bottom:12px;">Step 1 — Submit to your representatives</h2>
+  ${legCards}
 
-  <h2 style="font-size:0.85rem; font-family: Arial, sans-serif; text-transform:uppercase; letter-spacing:0.15em; color:#8A7A6A; margin-bottom:8px;">Your Letter</h2>
+  <h2 style="font-size:0.85rem; font-family: Arial, sans-serif; text-transform:uppercase; letter-spacing:0.15em; color:#8A7A6A; margin:28px 0 12px;">Step 2 — Your letter (copy & paste)</h2>
   <div style="border: 1px solid rgba(74,63,53,0.35); background: #fff; padding: 24px; border-radius: 4px; font-size:0.88rem; line-height:1.8; white-space:pre-wrap;">${letter}</div>
 
   <p style="font-size:0.75rem; color:#8A7A6A; font-style:italic; margin-top:28px; text-align:center;">
