@@ -57,16 +57,8 @@ export default async function handler(req, res) {
       `https://api.legiscan.com/?key=${legiscanKey}&op=getSessionList&state=${state}`
     )
     const sessionsData = await sessionsRes.json()
-    if (sessionsData.status !== 'OK') {
-      return res.status(500).json({ error: `LegiScan session list failed: ${JSON.stringify(sessionsData).slice(0, 200)}` })
-    }
-
-    // Find the most recent active session
-    const sessions = sessionsData.sessions || []
-    const currentSession = sessions.find(s => s.year_end >= new Date().getFullYear()) || sessions[0]
-    if (!currentSession) {
-      return res.status(500).json({ error: `No active session found. Sessions: ${JSON.stringify(sessions).slice(0, 200)}` })
-    }
+    // Debug: return the raw LegiScan response so we can see its structure
+    return res.status(200).json({ _debug_raw: JSON.stringify(sessionsData).slice(0, 1000) })
 
 
     // Step 4: Get people (legislators) for this session
