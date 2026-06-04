@@ -262,7 +262,9 @@ function ErrorBox({ message }) {
 
 export default function App() {
   const [step, setStep] = useState(0)
+  const [track, setTrack] = useState('federal') // 'federal' or 'state'
   const [address, setAddress] = useState('')
+  const [stateCode, setStateCode] = useState('')
   const [selectedIssues, setSelectedIssues] = useState([])
   const [legislation, setLegislation] = useState([])
   const [selectedBill, setSelectedBill] = useState(null)
@@ -283,11 +285,14 @@ export default function App() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/legislators?address=${encodeURIComponent(address)}&t=${Date.now()}`)
+      const endpoint = track === 'state' ? '/api/state-legislators' : '/api/legislators'
+      const res = await fetch(`${endpoint}?address=${encodeURIComponent(address)}&t=${Date.now()}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Could not look up your representatives.')
+      if (data.officials.length === 0) throw new Error(data.districtNote || 'No representatives found for that address.')
       setLegislators(data.officials)
       setSelectedLegs(data.officials.map(l => l.id))
+      if (data.state) setStateCode(data.state)
       setStep(1)
     } catch (e) {
       setError(e.message)
@@ -301,10 +306,14 @@ export default function App() {
     setError('')
     try {
       const issueLabels = selectedIssues.map(id => ISSUES.find(i => i.id === id)?.label).filter(Boolean)
-      const res = await fetch('/api/legislation', {
+      const endpoint = track === 'state' ? '/api/state-legislation' : '/api/legislation'
+      const body = track === 'state'
+        ? { issues: issueLabels, state: stateCode }
+        : { issues: issueLabels }
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ issues: issueLabels }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Could not fetch legislation.')
@@ -365,7 +374,7 @@ export default function App() {
   }
 
   function restart() {
-    setStep(0); setAddress(''); setSelectedIssues([]); setLegislation([])
+    setStep(0); setTrack('federal'); setAddress(''); setStateCode(''); setSelectedIssues([]); setLegislation([])
     setSelectedBill(null); setBillPosition('support'); setPersonalContext(''); setLegislators([])
     setSelectedLegs([]); setSelectedTone(''); setLetterText(''); setUserEmail(''); setError('')
   }
@@ -414,6 +423,28 @@ export default function App() {
 
           <div style={S.stepLabel}>Step 1 of 6</div>
           <h2 style={{ ...S.h2, marginTop: '0.75rem' }}>Where do you call home?</h2>
+
+          {/* Federal / State toggle */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: '1rem' }}>
+            {['federal', 'state'].map(t => (
+              <button key={t} onClick={() => setTrack(t)} style={{
+                flex: 1,
+                padding: '0.55rem',
+                border: track === t ? '1px solid #8B1A1A' : '1px solid rgba(74,63,53,0.35)',
+                background: track === t ? 'rgba(139,26,26,0.08)' : 'transparent',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontFamily: "'Cinzel', serif",
+                fontSize: '0.75rem',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: track === t ? '#8B1A1A' : '#4A3F35',
+                fontWeight: track === t ? 600 : 400,
+              }}>
+                {t === 'federal' ? '🏛 Federal (Congress)' : '🏛 State Legislature'}
+              </button>
+            ))}
+          </div>
           <ErrorBox message={error} />
           <input
             style={S.input}
@@ -785,6 +816,7 @@ export default function App() {
             { name: 'congress.gov', desc: 'Official U.S. Congressional member data', url: 'https://congress.gov', badge: 'U.S. Government' },
             { name: 'Census Bureau Geocoder', desc: 'Congressional district lookup by coordinates', url: 'https://geocoding.geo.census.gov', badge: 'U.S. Government' },
             { name: 'Zippopotam.us', desc: 'ZIP code to location conversion', url: 'https://zippopotam.us', badge: 'Free & Open' },
+            { name: 'LegiScan', desc: 'State legislative data & bill tracking (all 50 states)', url: 'https://legiscan.com', badge: 'State Data' },
             { name: 'Claude by Anthropic', desc: 'AI letter drafting & legislation research', url: 'https://anthropic.com', badge: 'AI' },
             { name: 'Resend', desc: 'Email delivery of your finished letter', url: 'https://resend.com', badge: 'Email' },
           ].map(api => (
