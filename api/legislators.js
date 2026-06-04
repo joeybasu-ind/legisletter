@@ -72,7 +72,9 @@ export default async function handler(req, res) {
         ? (words[0][0] + words[words.length - 1][0]).toUpperCase()
         : fullName.slice(0, 2).toUpperCase()
       const party = m.partyName === 'Democratic' ? 'D' : m.partyName === 'Republican' ? 'R' : 'I'
-      return { name: fullName, title, party, initials, level: 'federal', email: null, phone: null, website: null }
+      // congress.gov returns the API url in m.url — derive the official website from officialWebsiteUrl if present
+      const website = m.officialWebsiteUrl || null
+      return { name: fullName, title, party, initials, level: 'federal', email: null, phone: null, website }
     }
 
     const officials = [
