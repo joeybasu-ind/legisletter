@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed.' })
   }
 
-  const { address, issues, tone, bill, billPosition } = req.body
+  const { address, issues, tone, bill, billPosition, personalContext } = req.body
 
   if (!tone) {
     return res.status(400).json({ error: 'Tone is required.' })
@@ -33,10 +33,14 @@ export default async function handler(req, res) {
     ? `\nSpecific legislation to focus on: ${bill.billNumber} — "${bill.title}". The constituent wants to ${billPosition === 'oppose' ? 'OPPOSE' : 'SUPPORT'} this bill. Summary: ${bill.summary}`
     : ''
 
+  const personalContextText = personalContext?.trim()
+    ? `\nThe constituent's personal reason for writing (weave this naturally into the letter in their own voice): "${personalContext.trim()}"`
+    : ''
+
   const prompt = `You are helping a constituent write a letter to their elected representative.
 
 Address/location: ${address || 'not specified'}
-Issues they care about: ${issueText}${billContext}
+Issues they care about: ${issueText}${billContext}${personalContextText}
 Tone: ${toneInstructions[tone] || toneInstructions.formal}
 
 Write a single constituent letter. Requirements:

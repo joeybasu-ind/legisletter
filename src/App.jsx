@@ -272,6 +272,7 @@ export default function App() {
   const [selectedTone, setSelectedTone] = useState('')
   const [letterText, setLetterText] = useState('')
   const [userEmail, setUserEmail] = useState('')
+  const [personalContext, setPersonalContext] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -330,7 +331,7 @@ export default function App() {
       const res = await fetch('/api/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, issues: issueLabels, tone: selectedTone, bill: selectedBill, billPosition }),
+        body: JSON.stringify({ address, issues: issueLabels, tone: selectedTone, bill: selectedBill, billPosition, personalContext }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Could not draft letter.')
@@ -365,7 +366,7 @@ export default function App() {
 
   function restart() {
     setStep(0); setAddress(''); setSelectedIssues([]); setLegislation([])
-    setSelectedBill(null); setBillPosition('support'); setLegislators([])
+    setSelectedBill(null); setBillPosition('support'); setPersonalContext(''); setLegislators([])
     setSelectedLegs([]); setSelectedTone(''); setLetterText(''); setUserEmail(''); setError('')
   }
 
@@ -488,6 +489,23 @@ export default function App() {
                 <span>{issue.icon}</span>{issue.label}
               </button>
             ))}
+          </div>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label style={{ ...S.stepLabel, display: 'block', marginBottom: '0.5rem' }}>
+              Why does this matter to you? <span style={{ fontStyle: 'italic', textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+            </label>
+            <textarea
+              style={{
+                ...S.input,
+                height: 90,
+                resize: 'vertical',
+                lineHeight: 1.6,
+              }}
+              placeholder="e.g. My daughter has a pre-existing condition and I'm worried about what changes to the ACA would mean for our family..."
+              value={personalContext}
+              onChange={e => setPersonalContext(e.target.value)}
+            />
+            <p style={S.note}>Your words will be woven into the letter to make it genuinely yours — not a form letter.</p>
           </div>
           <ErrorBox message={error} />
           <hr style={S.divider} />
