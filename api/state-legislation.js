@@ -46,6 +46,7 @@ export default async function handler(req, res) {
     const bills = detailResults
       .filter(d => d?.status === 'OK' && d?.bill)
       .map(d => {
+
         const bill = d.bill
         const sponsor = bill.sponsors?.[0]
         const sponsorName = sponsor
@@ -61,17 +62,27 @@ export default async function handler(req, res) {
           6: 'Vetoed',
         }
 
+        const status = statusMap[bill.status] || 'In Progress'
+        // Skip bills that have already passed or been vetoed
+        if (['Passed Legislature', 'Signed into Law', 'Vetoed'].includes(status)) return null
+
+        const rawSummary = bill.description || bill.title
+        const summary = rawSummary.length > 160
+          ? rawSummary.slice(0, 157) + '...'
+          : rawSummary
+
         return {
           billNumber: bill.bill_number,
           title: bill.title,
-          summary: bill.description || bill.title,
-          status: statusMap[bill.status] || 'In Progress',
+          summary,
+          status,
           issue: issues[0],
           sponsor: sponsorName,
           url: bill.url,
           billId: bill.bill_id,
         }
       })
+      .filter(Boolean) // remove nulls from filtered-out passed bills
 
     return res.status(200).json({ bills })
   } catch (err) {
