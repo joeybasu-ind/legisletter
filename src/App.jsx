@@ -424,8 +424,8 @@ export default function App() {
               <li>Enter your address — we look up your real elected representatives using the official U.S. Congressional database</li>
               <li>Choose the issues you care about — we surface active legislation currently before Congress</li>
               <li>Pick a bill and your position — support or oppose</li>
-              <li>Claude AI drafts a personalized constituent letter in your voice</li>
-              <li>We email you the letter with direct links to each representative's contact page</li>
+              <li>We use AI to help craft a personalized constituent letter in your voice</li>
+              <li>We email you the letter with direct links to each representative's contact page. Sleep on it — and if you still feel the same way in the morning, you have a LegisLetter ready to go.</li>
             </ol>
             <p style={{ fontSize: '0.8rem', color: '#8A7A6A', fontStyle: 'italic', lineHeight: 1.7 }}>
               Your representatives are identified using congress.gov and the U.S. Census Bureau's congressional district data — the same official sources used by government agencies.
