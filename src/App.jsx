@@ -667,7 +667,7 @@ export default function App() {
           <div style={S.emailRow}>
             <input
               style={S.emailInput}
-              placeholder="Your email address (for a confirmation copy)..."
+              placeholder="Your email address — we'll send you the letter with submission links..."
               type="email"
               value={userEmail}
               onChange={e => setUserEmail(e.target.value)}
@@ -677,7 +677,7 @@ export default function App() {
           <div style={S.btnRow}>
             <Btn onClick={() => setStep(2.5)}>← Back</Btn>
             <Btn primary onClick={handleSend} disabled={loading || !letterText}>
-              {loading ? 'Sending…' : 'Send Letters →'}
+              {loading ? 'Sending…' : 'Email Me This Letter →'}
             </Btn>
           </div>
         </div>
@@ -688,16 +688,23 @@ export default function App() {
         <div style={S.successWrap}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📜</div>
           <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: '1.2rem', color: '#8B1A1A', marginBottom: '0.75rem' }}>
-            {selectedLegs.length === 1 ? 'Letter Delivered' : 'Letters Delivered'}
+            Your Letter is Ready
           </h2>
           <p style={{ fontSize: '0.88rem', color: '#4A3F35', fontStyle: 'italic', lineHeight: 1.7, maxWidth: 400, margin: '0 auto 1.5rem' }}>
-            Your voice has been sent to the following representatives.
-            {userEmail && ' A confirmation copy has been sent to your inbox.'}
+            {userEmail
+              ? 'Your letter has been sent to your inbox. Visit each representative\'s contact page to submit it directly — the links are in your email.'
+              : 'Your letter is ready. Visit each representative\'s contact page below to submit it directly.'}
           </p>
           <ul style={S.sentList}>
             {legislators.filter(l => selectedLegs.includes(l.id)).map(l => (
-              <li key={l.id} style={{ fontSize: '0.83rem', color: '#4A3F35', padding: '4px 0', borderBottom: '1px solid rgba(74,63,53,0.2)' }}>
-                ✓ {l.name} — {l.title}
+              <li key={l.id} style={{ fontSize: '0.83rem', color: '#4A3F35', padding: '6px 0', borderBottom: '1px solid rgba(74,63,53,0.2)' }}>
+                <div>{l.name} — {l.title}</div>
+                {l.website && (
+                  <a href={l.website} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: '0.75rem', color: '#8B1A1A', textDecoration: 'underline' }}>
+                    Submit letter on their website →
+                  </a>
+                )}
               </li>
             ))}
           </ul>
