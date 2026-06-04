@@ -57,19 +57,25 @@ export default async function handler(req, res) {
       `https://api.legiscan.com/?key=${legiscanKey}&op=getSessionList&state=${state}`
     )
     const sessionsData = await sessionsRes.json()
-    if (sessionsData.status !== 'OK') throw new Error('Could not fetch state sessions')
+    if (sessionsData.status !== 'OK') {
+      return res.status(500).json({ error: `LegiScan session list failed: ${JSON.stringify(sessionsData).slice(0, 200)}` })
+    }
 
     // Find the most recent active session
     const sessions = sessionsData.sessions || []
     const currentSession = sessions.find(s => s.year_end >= new Date().getFullYear()) || sessions[0]
-    if (!currentSession) throw new Error('No active session found')
+    if (!currentSession) {
+      return res.status(500).json({ error: `No active session found. Sessions: ${JSON.stringify(sessions).slice(0, 200)}` })
+    }
 
     // Step 4: Get people (legislators) for this session
     const peopleRes = await fetch(
       `https://api.legiscan.com/?key=${legiscanKey}&op=getSessionPeople&session_id=${currentSession.session_id}`
     )
     const peopleData = await peopleRes.json()
-    if (peopleData.status !== 'OK') throw new Error('Could not fetch state legislators')
+    if (peopleData.status !== 'OK') {
+      return res.status(500).json({ error: `LegiScan people failed: ${JSON.stringify(peopleData).slice(0, 200)}` })
+    }
 
     const people = peopleData.sessionpeople?.people || []
 
