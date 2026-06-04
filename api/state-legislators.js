@@ -68,6 +68,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: `No active session found. Sessions: ${JSON.stringify(sessions).slice(0, 200)}` })
     }
 
+    // Debug: return the session structure so we can see the correct field names
+    return res.status(200).json({ _debug: { currentSession, sessionKeys: Object.keys(currentSession) } })
+
     // Step 4: Get people (legislators) for this session
     const peopleRes = await fetch(
       `https://api.legiscan.com/?key=${legiscanKey}&op=getSessionPeople&session_id=${currentSession.session_id}`
