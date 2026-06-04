@@ -412,6 +412,20 @@ export default function App() {
             </p>
           </blockquote>
 
+          <div style={S.stepLabel}>Step 1 of 6</div>
+          <h2 style={{ ...S.h2, marginTop: '0.75rem' }}>Where do you call home?</h2>
+          <ErrorBox message={error} />
+          <input
+            style={S.input}
+            placeholder="e.g. 123 Main St, Springfield, IL 62701"
+            value={address}
+            onChange={e => setAddress(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAddressNext()}
+            autoComplete="street-address"
+          />
+          <p style={S.note}>Your address determines which federal legislators represent you in the U.S. Senate and House of Representatives.</p>
+          <hr style={S.divider} />
+
           {/* Mission statement */}
           <div style={{ marginBottom: '1.75rem' }}>
             <h2 style={{ ...S.h2, marginBottom: '0.6rem' }}>What is LegisLetter?</h2>
@@ -433,21 +447,6 @@ export default function App() {
             </p>
           </div>
 
-          <hr style={S.divider} />
-
-          <div style={S.stepLabel}>Step 1 of 6</div>
-          <h2 style={{ ...S.h2, marginTop: '0.75rem' }}>Where do you call home?</h2>
-          <ErrorBox message={error} />
-          <input
-            style={S.input}
-            placeholder="e.g. 123 Main St, Springfield, IL 62701"
-            value={address}
-            onChange={e => setAddress(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAddressNext()}
-            autoComplete="street-address"
-          />
-          <p style={S.note}>Your address determines which federal legislators represent you in the U.S. Senate and House of Representatives.</p>
-          <hr style={S.divider} />
           <div style={S.btnRow}>
             <Btn primary onClick={handleAddressNext} disabled={loading || !address.trim()}>
               {loading ? 'Looking up…' : 'Find My Representatives →'}
@@ -797,6 +796,9 @@ export default function App() {
         </div>
         <p style={{ fontSize: '0.72rem', color: '#8A7A6A', fontStyle: 'italic', lineHeight: 1.7, textAlign: 'center' }}>
           LegisLetter does not store your address, letter, or personal information. All data is processed in real time and discarded.
+        </p>
+        <p style={{ fontSize: '0.72rem', color: '#C4922A', fontFamily: "'Cinzel', serif", letterSpacing: '0.1em', textAlign: 'center', marginTop: '1rem' }}>
+          For Richard Porter
         </p>
       </footer>
 
