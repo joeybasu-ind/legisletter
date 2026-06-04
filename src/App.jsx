@@ -424,13 +424,22 @@ export default function App() {
             autoComplete="street-address"
           />
           <p style={S.note}>Your address determines which federal legislators represent you in the U.S. Senate and House of Representatives.</p>
+          <div style={{ ...S.btnRow, margin: '1rem 0' }}>
+            <Btn primary onClick={handleAddressNext} disabled={loading || !address.trim()}>
+              {loading ? 'Looking up…' : 'Find My Representatives →'}
+            </Btn>
+          </div>
+
           <hr style={S.divider} />
 
           {/* Mission statement */}
           <div style={{ marginBottom: '1.75rem' }}>
             <h2 style={{ ...S.h2, marginBottom: '0.6rem' }}>What is LegisLetter?</h2>
             <p style={{ fontSize: '0.88rem', color: '#4A3F35', lineHeight: 1.8, marginBottom: '0.75rem' }}>
-              LegisLetter helps everyday Americans make their voices heard in Congress — before the vote, not after.
+              Making your voice heard in Washington can feel intimidating — but it shouldn't be. LegisLetter is for all Americans: conservatives, progressives, and independents alike. Whatever you believe, your representatives work for you, and hearing from constituents matters more than most people realize.
+            </p>
+            <p style={{ fontSize: '0.88rem', color: '#4A3F35', lineHeight: 1.8, marginBottom: '0.75rem' }}>
+              LegisLetter is here to make that a little easier — before the vote, not after.
             </p>
             <p style={{ fontSize: '0.85rem', color: '#4A3F35', lineHeight: 1.8, marginBottom: '0.75rem' }}>
               Here's how it works:
@@ -447,11 +456,6 @@ export default function App() {
             </p>
           </div>
 
-          <div style={S.btnRow}>
-            <Btn primary onClick={handleAddressNext} disabled={loading || !address.trim()}>
-              {loading ? 'Looking up…' : 'Find My Representatives →'}
-            </Btn>
-          </div>
         </div>
       )}
 
