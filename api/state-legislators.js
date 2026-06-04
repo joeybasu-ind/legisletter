@@ -77,16 +77,17 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: `LegiScan people failed (id=${currentSession.session_id}): ${JSON.stringify(peopleData).slice(0, 200)}` })
     }
 
-    const people = peopleData.sessionpeople?.people || []
-
-    // Debug: show sample people and district info
+    // Debug: show raw structure of peopleData
     return res.status(200).json({
       _debug: {
         upperDistrict, lowerDistrict,
-        samplePeople: people.slice(0, 5).map(p => ({ name: p.name, role: p.role, district: p.district, party: p.party })),
-        totalPeople: people.length,
+        peopleDataKeys: Object.keys(peopleData),
+        sessionpeopleKeys: peopleData.sessionpeople ? Object.keys(peopleData.sessionpeople) : 'missing',
+        rawSample: JSON.stringify(peopleData).slice(0, 800),
       }
     })
+
+    const people = peopleData.sessionpeople?.people || []
 
     // Normalize district number for comparison (strip leading zeros)
     const norm = d => String(parseInt(d, 10))
