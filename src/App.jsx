@@ -394,8 +394,48 @@ export default function App() {
       {/* ── Step 0: Address ── */}
       {step === 0 && (
         <div>
+
+          {/* Declaration excerpt */}
+          <blockquote style={{
+            borderLeft: '3px solid #C4922A',
+            margin: '0 0 1.75rem 0',
+            padding: '0.75rem 1.25rem',
+            background: 'rgba(196,146,42,0.05)',
+            borderRadius: '0 4px 4px 0',
+          }}>
+            <p style={{ fontSize: '0.85rem', fontStyle: 'italic', color: '#4A3F35', lineHeight: 1.8, margin: 0 }}>
+              "Governments are instituted among Men, deriving their just powers from the consent of the governed."
+            </p>
+            <p style={{ fontSize: '0.72rem', color: '#8A7A6A', margin: '0.5rem 0 0', letterSpacing: '0.05em' }}>
+              — Declaration of Independence, 1776
+            </p>
+          </blockquote>
+
+          {/* Mission statement */}
+          <div style={{ marginBottom: '1.75rem' }}>
+            <h2 style={{ ...S.h2, marginBottom: '0.6rem' }}>What is LegisLetter?</h2>
+            <p style={{ fontSize: '0.88rem', color: '#4A3F35', lineHeight: 1.8, marginBottom: '0.75rem' }}>
+              LegisLetter helps everyday Americans make their voices heard in Congress — before the vote, not after.
+            </p>
+            <p style={{ fontSize: '0.85rem', color: '#4A3F35', lineHeight: 1.8, marginBottom: '0.75rem' }}>
+              Here's how it works:
+            </p>
+            <ol style={{ fontSize: '0.85rem', color: '#4A3F35', lineHeight: 2, paddingLeft: '1.25rem', margin: '0 0 0.75rem' }}>
+              <li>Enter your address — we look up your real elected representatives using the official U.S. Congressional database</li>
+              <li>Choose the issues you care about — we surface active legislation currently before Congress</li>
+              <li>Pick a bill and your position — support or oppose</li>
+              <li>Claude AI drafts a personalized constituent letter in your voice</li>
+              <li>We email you the letter with direct links to each representative's contact page</li>
+            </ol>
+            <p style={{ fontSize: '0.8rem', color: '#8A7A6A', fontStyle: 'italic', lineHeight: 1.7 }}>
+              Your representatives are identified using congress.gov and the U.S. Census Bureau's congressional district data — the same official sources used by government agencies.
+            </p>
+          </div>
+
+          <hr style={S.divider} />
+
           <div style={S.stepLabel}>Step 1 of 6</div>
-          <h2 style={S.h2}>Where do you call home?</h2>
+          <h2 style={{ ...S.h2, marginTop: '0.75rem' }}>Where do you call home?</h2>
           <ErrorBox message={error} />
           <input
             style={S.input}
@@ -405,7 +445,7 @@ export default function App() {
             onKeyDown={e => e.key === 'Enter' && handleAddressNext()}
             autoComplete="street-address"
           />
-          <p style={S.note}>Your address determines which legislators represent you at the local, state, and federal levels.</p>
+          <p style={S.note}>Your address determines which federal legislators represent you in the U.S. Senate and House of Representatives.</p>
           <hr style={S.divider} />
           <div style={S.btnRow}>
             <Btn primary onClick={handleAddressNext} disabled={loading || !address.trim()}>
