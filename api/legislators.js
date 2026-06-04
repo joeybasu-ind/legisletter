@@ -63,8 +63,18 @@ export default async function handler(req, res) {
       ? houseAll.find(m => Number(m.district) === parseInt(district, 10))
       : null
 
-    const toOfficial = (m, title) => {
-      // congress.gov returns names as "Last, First" — flip them
+    const targetMembers = [...senators, ...(houseRep ? [houseRep] : [])]
+
+    // Fetch each member's detail page in parallel to get officialWebsiteUrl
+    const detailResults = await Promise.all(
+      targetMembers.map(m =>
+        fetch(`https://api.congress.gov/v3/member/${m.bioguideId}?api_key=${congressKey}`)
+          .then(r => r.json())
+          .catch(() => null)
+      )
+    )
+
+    const toOfficial = (m, title, detail) => {
       const parts = (m.name || '').split(', ')
       const fullName = parts.length === 2 ? `${parts[1]} ${parts[0]}` : m.name
       const words = fullName.trim().split(' ')
@@ -72,15 +82,15 @@ export default async function handler(req, res) {
         ? (words[0][0] + words[words.length - 1][0]).toUpperCase()
         : fullName.slice(0, 2).toUpperCase()
       const party = m.partyName === 'Democratic' ? 'D' : m.partyName === 'Republican' ? 'R' : 'I'
-      // congress.gov returns the API url in m.url — derive the official website from officialWebsiteUrl if present
-      const website = m.officialWebsiteUrl || null
+      const website = detail?.member?.officialWebsiteUrl || null
       return { name: fullName, title, party, initials, level: 'federal', email: null, phone: null, website }
     }
 
-    const officials = [
-      ...senators.map(m => toOfficial(m, `U.S. Senator (${state})`)),
-      ...(houseRep ? [toOfficial(houseRep, `U.S. Representative, ${state}-${district}`)] : []),
-    ].map((o, i) => ({ ...o, id: i + 1 }))
+    const officials = targetMembers.map((m, i) => {
+      const isSenator = !m.district
+      const title = isSenator ? `U.S. Senator (${state})` : `U.S. Representative, ${state}-${district}`
+      return { ...toOfficial(m, title, detailResults[i]), id: i + 1 }
+    })
 
     if (officials.length === 0) {
       return res.status(404).json({ error: 'No representatives found for that ZIP code.' })
