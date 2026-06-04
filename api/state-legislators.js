@@ -38,7 +38,7 @@ export default async function handler(req, res) {
   let upperDistrict = null, lowerDistrict = null
   if (lat && lng) {
     try {
-      const censusUrl = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lng}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Current&layers=45,46&format=json`
+      const censusUrl = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lng}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Current&layers=all&format=json`
       const r = await fetch(censusUrl)
       if (r.ok) {
         const d = await r.json()
@@ -79,17 +79,20 @@ export default async function handler(req, res) {
 
     const people = peopleData.sessionpeople?.people || []
 
+    // Normalize district number for comparison (strip leading zeros)
+    const norm = d => String(parseInt(d, 10))
+
     // Filter to senators (upper) and representatives (lower) matching the user's district
     const senators = people.filter(p =>
       p.role === 'Sen' &&
       upperDistrict &&
-      String(p.district).replace(/^0+/, '') === String(parseInt(upperDistrict, 10))
+      norm(p.district) === norm(upperDistrict)
     )
 
     const representatives = people.filter(p =>
       p.role === 'Rep' &&
       lowerDistrict &&
-      String(p.district).replace(/^0+/, '') === String(parseInt(lowerDistrict, 10))
+      norm(p.district) === norm(lowerDistrict)
     )
 
     // If district matching fails, return a helpful message
