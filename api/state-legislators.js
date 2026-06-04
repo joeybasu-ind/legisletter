@@ -79,6 +79,15 @@ export default async function handler(req, res) {
 
     const people = peopleData.sessionpeople?.people || []
 
+    // Debug: show sample people and district info
+    return res.status(200).json({
+      _debug: {
+        upperDistrict, lowerDistrict,
+        samplePeople: people.slice(0, 5).map(p => ({ name: p.name, role: p.role, district: p.district, party: p.party })),
+        totalPeople: people.length,
+      }
+    })
+
     // Normalize district number for comparison (strip leading zeros)
     const norm = d => String(parseInt(d, 10))
 
