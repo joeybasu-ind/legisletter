@@ -57,17 +57,24 @@ export default async function handler(req, res) {
       `https://api.legiscan.com/?key=${legiscanKey}&op=getSessionList&state=${state}`
     )
     const sessionsData = await sessionsRes.json()
-    // Debug: return the raw LegiScan response so we can see its structure
-    return res.status(200).json({ _debug_raw: JSON.stringify(sessionsData).slice(0, 1000) })
+    if (sessionsData.status !== 'OK') {
+      return res.status(500).json({ error: `LegiScan session list failed: ${JSON.stringify(sessionsData).slice(0, 200)}` })
+    }
 
+    // Find the most recent active session (sine_die: 0 means still in session)
+    const sessions = sessionsData.sessions || []
+    const currentSession = sessions.find(s => s.sine_die === 0) || sessions[0]
+    if (!currentSession) {
+      return res.status(500).json({ error: 'No active session found.' })
+    }
 
-    // Step 4: Get people (legislators) for this session
+    // Step 4: Get people (legislators) for this session — LegiScan uses 'id' not 'session_id'
     const peopleRes = await fetch(
-      `https://api.legiscan.com/?key=${legiscanKey}&op=getSessionPeople&session_id=${currentSession.session_id}`
+      `https://api.legiscan.com/?key=${legiscanKey}&op=getSessionPeople&id=${currentSession.session_id}`
     )
     const peopleData = await peopleRes.json()
     if (peopleData.status !== 'OK') {
-      return res.status(500).json({ error: `LegiScan people failed (session_id=${currentSession.session_id}): ${JSON.stringify(peopleData).slice(0, 200)}. Full session: ${JSON.stringify(currentSession).slice(0, 300)}` })
+      return res.status(500).json({ error: `LegiScan people failed (id=${currentSession.session_id}): ${JSON.stringify(peopleData).slice(0, 200)}` })
     }
 
     const people = peopleData.sessionpeople?.people || []
