@@ -77,20 +77,14 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: `LegiScan people failed (id=${currentSession.session_id}): ${JSON.stringify(peopleData).slice(0, 200)}` })
     }
 
-    // Debug: show raw structure of peopleData
-    return res.status(200).json({
-      _debug: {
-        upperDistrict, lowerDistrict,
-        peopleDataKeys: Object.keys(peopleData),
-        sessionpeopleKeys: peopleData.sessionpeople ? Object.keys(peopleData.sessionpeople) : 'missing',
-        rawSample: JSON.stringify(peopleData).slice(0, 800),
-      }
-    })
-
     const people = peopleData.sessionpeople?.people || []
 
-    // Normalize district number for comparison (strip leading zeros)
-    const norm = d => String(parseInt(d, 10))
+    // LegiScan districts are formatted as "SD-020" or "HD-039"
+    // Extract trailing number and strip leading zeros for comparison
+    const norm = d => {
+      const match = String(d).match(/(\d+)$/)
+      return match ? String(parseInt(match[1], 10)) : String(d)
+    }
 
     // Filter to senators (upper) and representatives (lower) matching the user's district
     const senators = people.filter(p =>
