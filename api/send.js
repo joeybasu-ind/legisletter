@@ -82,7 +82,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'LegisLetter <onboarding@resend.dev>',
+        from: 'LegisLetter <noreply@legisletter.us>',
         to: userEmail || 'hello@legisletter.us',
         subject: 'Your constituent letter is ready',
         html: emailHtml,
