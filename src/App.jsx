@@ -770,6 +770,36 @@ export default function App() {
         </div>
       )}
 
+      {/* ── Footer ── */}
+      <footer style={{
+        marginTop: '3rem',
+        paddingTop: '1.5rem',
+        borderTop: '1px solid rgba(74,63,53,0.2)',
+      }}>
+        <div style={{ ...S.stepLabel, marginBottom: '1rem' }}>Powered by</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10, marginBottom: '1.25rem' }}>
+          {[
+            { name: 'congress.gov', desc: 'Official U.S. Congressional member data', url: 'https://congress.gov', badge: 'U.S. Government' },
+            { name: 'Census Bureau Geocoder', desc: 'Congressional district lookup by coordinates', url: 'https://geocoding.geo.census.gov', badge: 'U.S. Government' },
+            { name: 'Zippopotam.us', desc: 'ZIP code to location conversion', url: 'https://zippopotam.us', badge: 'Free & Open' },
+            { name: 'Claude by Anthropic', desc: 'AI letter drafting & legislation research', url: 'https://anthropic.com', badge: 'AI' },
+            { name: 'Resend', desc: 'Email delivery of your finished letter', url: 'https://resend.com', badge: 'Email' },
+          ].map(api => (
+            <a key={api.name} href={api.url} target="_blank" rel="noopener noreferrer"
+              style={{ textDecoration: 'none', display: 'block', padding: '0.75rem', border: '1px solid rgba(74,63,53,0.15)', borderRadius: 4, background: 'rgba(255,255,255,0.4)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 500, color: '#1A1410' }}>{api.name}</span>
+                <span style={{ fontSize: '0.62rem', padding: '1px 5px', borderRadius: 2, background: 'rgba(196,146,42,0.12)', color: '#C4922A', fontFamily: "'Cinzel', serif", letterSpacing: '0.05em', flexShrink: 0 }}>{api.badge}</span>
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#8A7A6A', lineHeight: 1.5 }}>{api.desc}</div>
+            </a>
+          ))}
+        </div>
+        <p style={{ fontSize: '0.72rem', color: '#8A7A6A', fontStyle: 'italic', lineHeight: 1.7, textAlign: 'center' }}>
+          LegisLetter does not store your address, letter, or personal information. All data is processed in real time and discarded.
+        </p>
+      </footer>
+
     </div>
   )
 }
